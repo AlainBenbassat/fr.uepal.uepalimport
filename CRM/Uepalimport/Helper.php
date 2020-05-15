@@ -325,7 +325,26 @@ class CRM_Uepalimport_Helper {
           $relTypeId = $config->getRelationshipType_estMembreDeDroitDe()['id'];
           self::createRelationship($contact['id'], $dao->relationship_membre_droit_cp, $relTypeId, '', '');
         }
-
+        if ($dao->relationship_tresorier_cp) {
+          $relTypeId = $config->getRelationshipType_estTresorierDe()['id'];
+          self::createRelationship($contact['id'], $dao->relationship_tresorier_cp, $relTypeId, '', '');
+        }
+        if ($dao->relationship_invite_cp) {
+          $relTypeId = $config->getRelationshipType_estMembreInviteDe()['id'];
+          self::createRelationship($contact['id'], $dao->relationship_invite_cp, $relTypeId, '', '');
+        }
+        if ($dao->relationship_secretaire_cp) {
+          $relTypeId = $config->getRelationshipType_estSecretaireDe()['id'];
+          self::createRelationship($contact['id'], $dao->relationship_secretaire_cp, $relTypeId, '', '');
+        }
+        if ($dao->relationship_president) {
+          $relTypeId = $config->getRelationshipType_estPresidentDe()['id'];
+          self::createRelationship($contact['id'], $dao->relationship_president, $relTypeId, '', '');
+        }
+        if ($dao->relationship_vice_president) {
+          $relTypeId = $config->getRelationshipType_estVicePresidentDe()['id'];
+          self::createRelationship($contact['id'], $dao->relationship_vice_president, $relTypeId, '', '');
+        }
       }
     }
 
