@@ -135,55 +135,26 @@ class CRM_Uepalimport_Helper {
           $params['birth_date'] = $dao->birth_year . '-01-01';
         }
 
+        // create the contact
+        $contact = civicrm_api3('Contact', 'create', $params);
+
         // add address
-        if ($dao->street_address) {
-          $params['api.address.create'] = ['street_address' => $dao->street_address];
-          $params['api.address.create']['location_type_id'] = 1; // home
-          if ($dao->postal_code) {
-            $params['api.address.create']['postal_code'] = $dao->postal_code;
-            $params['api.address.create']['state_province_id'] = self::getFrenchDepartment($dao->postal_code);
-          }
-          if ($dao->city) {
-            $params['api.address.create']['city'] = $dao->city;
-          }
-          if ($dao->supplemental_address_1) {
-            $params['api.address.create']['supplemental_address_1'] = $dao->supplemental_address_1;
-          }
-          $params['api.address.create']['country_id'] = 1076;
-        }
+        self::createaAddress($contact['id'], 1, $dao->street_address, $dao->supplemental_address_1, $dao->postal_code, $dao->city, 'France');
 
         // add phone
         if ($dao->home_phone) {
-          $params['api.phone.create'] = [
-            'phone' => $dao->home_phone,
-            'location_type_id' => 1, // home
-            'phone_type_id' => 1,
-          ];
+          self::createPhone($contact['id'], $dao->home_phone, 1, 1);
         }
 
         // add mobile phone
         if ($dao->home_mobile_phone) {
-          $suffix = '';
-          if (array_key_exists('api.phone.create', $params)) {
-            $suffix = '.2';
-          }
-          $params["api.phone.create$suffix"] = [
-            'phone' => $dao->home_mobile_phone,
-            'location_type_id' => 1, // home
-            'phone_type_id' => 2,
-          ];
+          self::createPhone($contact['id'], $dao->home_mobile_phone, 1, 2);
         }
 
         // add email
         if ($dao->home_email) {
-          $params['api.email.create'] = [
-            'email' => $dao->home_email,
-            'location_type_id' => 1, // home
-          ];
+          self::createEmail($contact['id'], $dao->home_email, 1);
         }
-
-        // create the contact
-        $contact = civicrm_api3('Contact', 'create', $params);
 
         $config = new CRM_Uepalconfig_Config();
 
@@ -221,6 +192,203 @@ class CRM_Uepalimport_Helper {
     }
 
     return TRUE;
+  }
+
+  public static function process_tmp_pasteurs_actifs_task(CRM_Queue_TaskContext $ctx, $id) {
+    $sql = "
+      SELECT
+        *
+      FROM
+        tmp_pasteurs_actifs
+      WHERE
+        id = '$id'
+    ";
+    $dao = CRM_Core_DAO::executeQuery($sql);
+    if ($dao->fetch()) {
+      // check if the contact exists
+      if (self::getContactByExternalId($dao->id) === FALSE) {
+        $params = [
+          'contact_type' => 'Individual',
+          'contact_sub_type' => ['pasteur'],
+          'external_identifier' => $dao->id,
+          'first_name' => $dao->first_name,
+          'last_name' => $dao->last_name,
+          'gender_id' => $dao->gender == 'Féminin' ? 1 : 2,
+          'prefix_id' => $dao->prefix == 'Madame' ? 1 : 3,
+          'source' => $dao->source,
+        ];
+
+        if ($dao->nick_name) {
+          $params['nick_name'] = $dao->first_name . ' ' . $dao->nick_name;
+        }
+
+        if ($dao->birth_year) {
+          if ($dao->birth_day_month) {
+            $parts = explode('/', $dao->birth_day_month);
+            if (count($parts) >= 2) {
+              // add month - day to the birth year
+              $params['birth_date'] = $dao->birth_year . '-' . $parts[1] . '-' . $parts[0];
+            }
+            else {
+              $params['birth_date'] = $dao->birth_year . '-01-01';
+            }
+          }
+          else {
+            $params['birth_date'] = $dao->birth_year . '-01-01';
+          }
+        }
+
+        if ($dao->formal_title) {
+          $params['formal_title'] = $dao->formal_title;
+        }
+        else {
+          $params['formal_title'] = $dao->gender == 'Féminin' ? 'la Pasteure' : 'le Pasteur';
+        }
+
+        // add custom fields
+        $config = new CRM_Uepalconfig_Config();
+        if ($dao->custom_field_annee_consecration) {
+          $params['custom_' . $config->getCustomField_pasteurDetailAnneeConsecration()['id']] = $dao->custom_field_annee_consecration;
+        }
+        if ($dao->custom_field_annee_entree_ministere) {
+          $params['custom_' . $config->getCustomField_pasteurDetailAnneeEntreeMinistere()['id']] = $dao->custom_field_annee_entree_ministere;
+        }
+        if ($dao->custom_field_annee_entree_poste_actuel) {
+          $params['custom_' . $config->getCustomField_pasteurDetailAnneeEntreePosteActuel()['id']] = $dao->custom_field_annee_entree_poste_actuel;
+        }
+        if ($dao->custom_field_datecafp) {
+          $params['custom_' . $config->getCustomField_pasteurDetailDateCAFP()['id']] = self::convertExcelDate($dao->custom_field_datecafp);
+        }
+        if ($dao->custom_field_degree) {
+          $params['custom_' . $config->getCustomField_pasteurDetailDiplomes()['id']] = $dao->custom_field_degree;
+        }
+
+        // create the contact
+        $contact = civicrm_api3('Contact', 'create', $params);
+
+        // add home address
+        if ($dao->home_street_address) {
+          self::createaAddress($contact['id'], 1, $dao->home_street_address, $dao->home_supplemental_address1, $dao->home_postal_code, $dao->home_city, $dao->home_country);
+        }
+
+        // add home phones
+        if ($dao->home_phone) {
+          self::createPhone($contact['id'], $dao->home_phone, 1, 1);
+        }
+        if ($dao->home_mobile_phone) {
+          self::createPhone($contact['id'], $dao->home_mobile_phone, 1, 2);
+        }
+        if ($dao->home_fax) {
+          self::createPhone($contact['id'], $dao->home_fax, 1, 3);
+        }
+
+        // add home email
+        if ($dao->home_email) {
+          self::createEmail($contact['id'], $dao->home_email, 1);
+        }
+
+        // add work address
+        if ($dao->work_street_address) {
+          self::createaAddress($contact['id'], 2, $dao->work_street_address, $dao->work_supplemental_address1, $dao->work_postal_code, $dao->work_city, $dao->work_country);
+        }
+
+        // add work phones
+        if ($dao->work_phone) {
+          self::createPhone($contact['id'], $dao->work_phone, 2, 1);
+        }
+        if ($dao->work_mobile_phone) {
+          self::createPhone($contact['id'], $dao->work_mobile_phone, 2, 2);
+        }
+        if ($dao->work_fax) {
+          self::createPhone($contact['id'], $dao->work_fax, 2, 3);
+        }
+
+        // add work email
+        if ($dao->work_email) {
+          self::createEmail($contact['id'], $dao->work_email, 2);
+        }
+
+        // add other phones
+        if ($dao->other_phone) {
+          self::createPhone($contact['id'], $dao->other_phone, 4, 1);
+        }
+        if ($dao->other_mobile_phone) {
+          self::createPhone($contact['id'], $dao->other_mobile_phone, 4, 2);
+        }
+
+        // add releationships
+        if ($dao->relationship_pasteur_de) {
+          $relTypeId = $config->getRelationshipType_estPasteurNommeDe()['id'];
+          self::createRelationship($contact['id'], $dao->relationship_pasteur_de, $relTypeId, '', '');
+        }
+        if ($dao->relationship_membre_droit_cp) {
+          $relTypeId = $config->getRelationshipType_estMembreDeDroitDe()['id'];
+          self::createRelationship($contact['id'], $dao->relationship_membre_droit_cp, $relTypeId, '', '');
+        }
+
+      }
+    }
+
+    return TRUE;
+  }
+
+  public static function createaAddress($contactId, $locationTypeId, $streetAddress, $supplementalAddress, $postalCode, $city, $country) {
+    $params = [
+      'contact_id' => $contactId,
+      'location_type_id' => $locationTypeId,
+      'street_address' => $streetAddress,
+    ];
+
+    if ($supplementalAddress) {
+      $params['supplemental_address_1'] = $supplementalAddress;
+    }
+
+    $params['country_id'] = self::getCountryId(strtolower($country));
+
+    if ($postalCode && $params['country_id'] == 1076) {
+      $params['postal_code'] = $postalCode;
+      $params['state_province_id'] = self::getFrenchDepartment($postalCode);
+    }
+    if ($city) {
+      $params['city'] = $city;
+    }
+
+    civicrm_api3('Address', 'create', $params);
+  }
+
+  public static function createEmail($contactId, $email, $locationTypeId) {
+    $params = [
+      'contact_id' => $contactId,
+      'email' => $email,
+      'location_type_id' => $locationTypeId,
+    ];
+    civicrm_api3('Email', 'create', $params);
+  }
+
+  public static function createPhone($contactId, $phone, $locationTypeId, $phoneTypeId) {
+    $params = [
+      'contact_id' => $contactId,
+      'phone' => $phone,
+      'location_type_id' => $locationTypeId,
+      'phone_type_id' => $phoneTypeId,
+    ];
+    civicrm_api3('Phone', 'create', $params);
+  }
+
+  public static function getCountryId($country) {
+    $countryId = 1076;
+
+    if ($country == 'allemagne') {
+      $countryId = 1082;
+    }
+    elseif ($country == 'suisse') {
+      $countryId = 1205;
+    }
+    elseif ($country == 'belgique') {
+      $countryId = 1020;
+    }
+
+    return $countryId;
   }
 
   public static function createRelationship($contactIdA, $exaternalContactIdB, $relationshipTypeId, $startDate, $endDate) {
@@ -274,6 +442,12 @@ class CRM_Uepalimport_Helper {
       1 => [substr($postalCode, 0, 2), 'String'],
     ];
     return CRM_Core_DAO::singleValueQuery($sql, $sqlParams);
+  }
+
+  public static function convertExcelDate($daysSince1900) {
+    $date = date_create('1900-01-01');
+    date_add($date, date_interval_create_from_date_string("$daysSince1900 days"));
+    return date_format($date,'Y-m-d');
   }
 
 

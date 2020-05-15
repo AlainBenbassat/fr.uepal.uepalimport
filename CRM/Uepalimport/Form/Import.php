@@ -21,6 +21,7 @@ class CRM_Uepalimport_Form_Import extends CRM_Core_Form {
     $importMenuOptions = [
       'tmp_paroisses' => 'Importer les paroisses',
       'tmp_individus' => 'Importer les individus et leurs relations',
+      'tmp_pasteurs_actifs' => 'Importer les pasteurs actifs',
       'test' => 'Test',
     ];
     $this->addRadio('import', 'Import:', $importMenuOptions, NULL, '<br>');
@@ -45,12 +46,14 @@ class CRM_Uepalimport_Form_Import extends CRM_Core_Form {
       $t = new CRM_Queue_TaskContext();
       //CRM_Uepalimport_Helper::process_tmp_paroisses_task($t, 8);
       //CRM_Uepalimport_Helper::process_tmp_paroisses_task($t, 143);
-      CRM_Uepalimport_Helper::process_tmp_individus_task($t, 'C0545');
+      //CRM_Uepalimport_Helper::process_tmp_individus_task($t, 'C0545');
+      CRM_Uepalimport_Helper::process_tmp_pasteurs_actifs_task($t, 557);
+      CRM_Uepalimport_Helper::process_tmp_pasteurs_actifs_task($t, 377);
       //CRM_Uepalimport_Helper::process_tmp_individus_task($t, 'C0881');
     }
     else {
       // put items in the queue
-      $sql = "select id from " . $values['import'] . " where id is not null order by id limit 0,25";
+      $sql = "select id from " . $values['import'] . " where id is not null order by id";
       $dao = CRM_Core_DAO::executeQuery($sql);
       while ($dao->fetch()) {
         $method = 'process_' . $values['import'] . '_task';
