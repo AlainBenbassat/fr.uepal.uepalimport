@@ -22,6 +22,8 @@ class CRM_Uepalimport_Form_Import extends CRM_Core_Form {
       'tmp_paroisses' => 'Importer les paroisses',
       'tmp_individus' => 'Importer les individus et leurs relations',
       'tmp_pasteurs_actifs' => 'Importer les pasteurs actifs',
+      'tmp_inspections' => 'Importer les inspections',
+      'tmp_consistoires' => 'Importer les consistoires',
       'test' => 'Test',
     ];
     $this->addRadio('import', 'Import:', $importMenuOptions, NULL, '<br>');

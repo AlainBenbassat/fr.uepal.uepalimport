@@ -100,6 +100,19 @@ class CRM_Uepalimport_Helper {
           $params['custom_' . $config->getCustomField_paroisseDetailTheologie()['id']] = [$dao->custom_field_theologie_lutherien . 'ne'];
         }
 
+        // add custom fields for inspection/consistoire
+        if ($dao->consistoire_external_identifier) {
+          $inspCons = self::getContactByExternalId($dao->consistoire_external_identifier);
+          if ($inspCons) {
+            $params['custom_' . $config->getCustomField_paroisseDetailConsistoireLutherien()['id']] = $inspCons['id'];
+          }
+        }
+        if ($dao->inspection_external_identifier) {
+          if ($inspCons) {
+            $params['custom_' . $config->getCustomField_paroisseDetailInspectionConsistoireReforme()['id']] = $inspCons['id'];
+          }
+        }
+
         $result = civicrm_api3('Contact', 'create', $params);
       }
     }
@@ -220,7 +233,7 @@ class CRM_Uepalimport_Helper {
       if (self::getContactByExternalId($dao->id) === FALSE) {
         $params = [
           'contact_type' => 'Individual',
-          'contact_sub_type' => ['pasteur'],
+          'contact_sub_type' => ['ministre'],
           'external_identifier' => $dao->id,
           'first_name' => $dao->first_name,
           'last_name' => $dao->last_name,
@@ -379,6 +392,73 @@ class CRM_Uepalimport_Helper {
         elseif ($dao->relationship_suffragant) {
           self::createContactTag($contact['id'], 'Suffragant·e');
         }
+      }
+    }
+
+    return TRUE;
+  }
+
+  public static function process_tmp_inspections(CRM_Queue_TaskContext $ctx, $id) {
+    $sql = "
+      SELECT
+        *
+      FROM
+        tmp_inspections
+      WHERE
+        id = $id
+    ";
+    $dao = CRM_Core_DAO::executeQuery($sql);
+    if ($dao->fetch()) {
+      // check if the contact exists
+      if (self::getContactByExternalId($dao->id) === FALSE) {
+        $params = [
+          'contact_type' => 'Organization',
+          'contact_sub_type' => ['inspection_consistoire_reforme'],
+          'organization_name' => $dao->organization_name,
+          'external_identifier' => $dao->external_identifier,
+        ];
+
+        // create the contact
+        $contact = civicrm_api3('Contact', 'create', $params);
+
+        // add the address
+        self::createaAddress($contact['id'], 2, '-', '', $dao->state_province . '000', $dao->city, $dao->country);
+      }
+    }
+
+    return TRUE;
+  }
+
+  public static function process_tmp_consistoires(CRM_Queue_TaskContext $ctx, $id) {
+    $sql = "
+      SELECT
+        *
+      FROM
+        tmp_consistoires
+      WHERE
+        id = $id
+    ";
+    $dao = CRM_Core_DAO::executeQuery($sql);
+    if ($dao->fetch()) {
+      // check if the contact exists
+      if (self::getContactByExternalId($dao->id) === FALSE) {
+        $params = [
+          'contact_type' => 'Organization',
+          'contact_sub_type' => ['consistoire_lutherien'],
+          'organization_name' => $dao->organization_name,
+          'external_identifier' => $dao->external_identifier,
+        ];
+
+        // create the contact
+        $contact = civicrm_api3('Contact', 'create', $params);
+
+        // add the address
+        self::createaAddress($contact['id'], 2, '-', '', $dao->state_province . '000', $dao->city, $dao->country);
+
+        // add the relationship with the inspection
+        $config = new CRM_Uepalconfig_Config();
+        $relTypeId = $config->getRelationshipType_estInspecteurDe()['id'];
+        self::createRelationship($contact['id'], $dao->relationship_pasteur_de, $relTypeId, '', '');
       }
     }
 
