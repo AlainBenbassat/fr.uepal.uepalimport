@@ -162,7 +162,18 @@ class CRM_Uepalimport_Helper {
         if ($dao->cp_member_id) {
           $relTypeId = $config->getRelationshipType_estMembreEluDe()['id'];
           self::createRelationship($contact['id'], $dao->cp_member_id, $relTypeId, $dao->cp_member_start_date, $dao->cp_member_end_date);
+
+          if ($dao->cp_member_old1_start_date && $dao->cp_member_old1_end_date) {
+            self::createRelationship($contact['id'], $dao->cp_member_id, $relTypeId, $dao->cp_member_old1_start_date, $dao->cp_member_old1_end_date);
+          }
+          if ($dao->cp_member_old2_start_date && $dao->cp_member_old2_end_date) {
+            self::createRelationship($contact['id'], $dao->cp_member_id, $relTypeId, $dao->cp_member_old2_start_date, $dao->cp_member_old2_end_date);
+          }
+          if ($dao->cp_member_old3_start_date && $dao->cp_member_old3_end_date) {
+            self::createRelationship($contact['id'], $dao->cp_member_id, $relTypeId, $dao->cp_member_old3_start_date, $dao->cp_member_old3_end_date);
+          }
         }
+
 
         if ($dao->cp_president_id) {
           $relTypeId = $config->getRelationshipType_estPresidentDe()['id'];
@@ -214,7 +225,7 @@ class CRM_Uepalimport_Helper {
           'first_name' => $dao->first_name,
           'last_name' => $dao->last_name,
           'gender_id' => $dao->gender == 'Féminin' ? 1 : 2,
-          'prefix_id' => $dao->prefix == 'Madame' ? 1 : 3,
+          'prefix_id' => $dao->prefix == 'Mme' ? 1 : 3,
           'source' => $dao->source,
         ];
 
@@ -242,7 +253,15 @@ class CRM_Uepalimport_Helper {
           $params['formal_title'] = $dao->formal_title;
         }
         else {
-          $params['formal_title'] = $dao->gender == 'Féminin' ? 'la Pasteure' : 'le Pasteur';
+          if ($dao->relationship_pasteur_de) {
+            $params['formal_title'] = $dao->gender == 'Féminin' ? 'la Pasteure' : 'le Pasteur';
+          }
+          elseif ($dao->relationship_vicaire) {
+            $params['formal_title'] = $dao->gender == 'le Vicaire';
+          }
+          elseif ($dao->relationship_suffragant) {
+            $params['formal_title'] = $dao->gender == 'Féminin' ? 'la Suffragante' : 'le Suffragant';
+          }
         }
 
         // add custom fields
@@ -345,6 +364,21 @@ class CRM_Uepalimport_Helper {
           $relTypeId = $config->getRelationshipType_estVicePresidentDe()['id'];
           self::createRelationship($contact['id'], $dao->relationship_vice_president, $relTypeId, '', '');
         }
+        if ($dao->relationship_suffragant) {
+          $relTypeId = $config->getRelationshipType_estSuffragantDe()['id'];
+          self::createRelationship($contact['id'], $dao->relationship_suffragant, $relTypeId, '', '');
+        }
+
+        // add the tag
+        if ($dao->relationship_pasteur_de) {
+          self::createContactTag($contact['id'], 'Pasteur·e');
+        }
+        elseif ($dao->relationship_vicaire) {
+          self::createContactTag($contact['id'], 'Vicaire');
+        }
+        elseif ($dao->relationship_suffragant) {
+          self::createContactTag($contact['id'], 'Suffragant·e');
+        }
       }
     }
 
@@ -443,6 +477,17 @@ class CRM_Uepalimport_Helper {
 
       civicrm_api3('Relationship', 'create', $params);
     }
+  }
+
+  public function createContactTag($contactId, $tag) {
+    $t = civicrm_api3('Tag', 'getsingle', ['name' => $tag]);
+    $params = [
+      'entity_table' => 'civicrm_contact',
+      'entity_id' => $contactId,
+      'tag_id' => $t['id'],
+
+    ];
+    civicrm_api3('EntityTag', 'create', $params);
   }
 
   public static function getContactByExternalId($id) {
