@@ -290,7 +290,7 @@ class CRM_Uepalimport_Helper {
           $params['custom_' . $config->getCustomField_ministreDetailAnneeEntreePosteActuel()['id']] = $dao->custom_field_annee_entree_poste_actuel;
         }
         if ($dao->custom_field_datecafp) {
-          $params['custom_' . $config->getCustomField_ministreDetailDateCAFP()['id']] = self::convertExcelDate($dao->custom_field_datecafp);
+          $params['custom_' . $config->getCustomField_ministreDetailDateCAFP()['id']] = $dao->custom_field_datecafp; //self::convertExcelDate($dao->custom_field_datecafp);
         }
         if ($dao->custom_field_degree) {
           $params['custom_' . $config->getCustomField_ministreDetailDiplomes()['id']] = $dao->custom_field_degree;
