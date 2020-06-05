@@ -393,6 +393,40 @@ class CRM_Uepalimport_Helper {
         elseif ($dao->relationship_suffragant) {
           self::createContactTag($contact['id'], 'Suffragant·e');
         }
+
+        // add private note
+        $privateNote = '';
+        if ($dao->home_street_address) {
+          $privateNote .= $dao->home_street_address . "\n";
+        }
+        if ($dao->home_supplemental_address1) {
+          $privateNote .= $dao->home_supplemental_address1 . "\n";
+        }
+        if ($dao->home_postal_code || $dao->home_city) {
+          $privateNote .= $dao->home_postal_code . " " . $dao->home_city . "\n";
+        }
+        // add home phones
+        if ($dao->home_phone) {
+          $privateNote .= 'Tél. ' . $dao->home_phone . '<br>';
+        }
+        if ($dao->home_mobile_phone) {
+          $privateNote .= 'Tél. ' . $dao->home_mobile_phone . '<br>';
+        }
+        if ($dao->home_fax) {
+          $privateNote .= 'Fax ' . $dao->home_fax . '<br>';
+        }
+        if ($dao->home_email) {
+          $privateNote .= 'Email ' . $dao->home_email . '<br>';
+        }
+        if ($privateNote) {
+          civicrm_api3('Note', 'create', [
+            'entity_table' => 'civicrm_contact',
+            'entity_id' => $contact['id'],
+            'note' => $privateNote,
+            'subject' => 'import',
+            'privacy' => 2,
+          ]);
+        }
       }
     }
 
