@@ -108,6 +108,7 @@ class CRM_Uepalimport_Helper {
           }
         }
         if ($dao->inspection_external_identifier) {
+          $inspCons = self::getContactByExternalId($dao->inspection_external_identifier);
           if ($inspCons) {
             $params['custom_' . $config->getCustomField_paroisseDetailInspectionConsistoireReforme()['id']] = $inspCons['id'];
           }
