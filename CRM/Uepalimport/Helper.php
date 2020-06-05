@@ -152,7 +152,7 @@ class CRM_Uepalimport_Helper {
         $contact = civicrm_api3('Contact', 'create', $params);
 
         // add address
-        self::createaAddress($contact['id'], 1, $dao->street_address, $dao->supplemental_address_1, $dao->postal_code, $dao->city, 'France');
+        self::createAddress($contact['id'], 1, $dao->street_address, $dao->supplemental_address_1, $dao->postal_code, $dao->city, 'France');
 
         // add phone
         if ($dao->home_phone) {
@@ -300,7 +300,7 @@ class CRM_Uepalimport_Helper {
 
         // add home address
         if ($dao->home_street_address) {
-          self::createaAddress($contact['id'], 1, $dao->home_street_address, $dao->home_supplemental_address1, $dao->home_postal_code, $dao->home_city, $dao->home_country);
+          self::createAddress($contact['id'], 1, $dao->home_street_address, $dao->home_supplemental_address1, $dao->home_postal_code, $dao->home_city, $dao->home_country);
         }
 
         // add home phones
@@ -321,7 +321,7 @@ class CRM_Uepalimport_Helper {
 
         // add work address
         if ($dao->work_street_address) {
-          self::createaAddress($contact['id'], 2, $dao->work_street_address, $dao->work_supplemental_address1, $dao->work_postal_code, $dao->work_city, $dao->work_country);
+          self::createAddress($contact['id'], 2, $dao->work_street_address, $dao->work_supplemental_address1, $dao->work_postal_code, $dao->work_city, $dao->work_country);
         }
 
         // add work phones
@@ -398,7 +398,7 @@ class CRM_Uepalimport_Helper {
     return TRUE;
   }
 
-  public static function process_tmp_inspections(CRM_Queue_TaskContext $ctx, $id) {
+  public static function process_tmp_inspections_task(CRM_Queue_TaskContext $ctx, $id) {
     $sql = "
       SELECT
         *
@@ -422,14 +422,14 @@ class CRM_Uepalimport_Helper {
         $contact = civicrm_api3('Contact', 'create', $params);
 
         // add the address
-        self::createaAddress($contact['id'], 2, '-', '', $dao->state_province . '000', $dao->city, $dao->country);
+        self::createAddress($contact['id'], 2, '-', '', $dao->state_province . '000', $dao->city, $dao->country);
       }
     }
 
     return TRUE;
   }
 
-  public static function process_tmp_consistoires(CRM_Queue_TaskContext $ctx, $id) {
+  public static function process_tmp_consistoires_task(CRM_Queue_TaskContext $ctx, $id) {
     $sql = "
       SELECT
         *
@@ -453,7 +453,7 @@ class CRM_Uepalimport_Helper {
         $contact = civicrm_api3('Contact', 'create', $params);
 
         // add the address
-        self::createaAddress($contact['id'], 2, '-', '', $dao->state_province . '000', $dao->city, $dao->country);
+        self::createAddress($contact['id'], 2, '-', '', $dao->state_province . '000', $dao->city, $dao->country);
 
         // add the relationship with the inspection
         $config = new CRM_Uepalconfig_Config();
@@ -465,7 +465,7 @@ class CRM_Uepalimport_Helper {
     return TRUE;
   }
 
-  public static function createaAddress($contactId, $locationTypeId, $streetAddress, $supplementalAddress, $postalCode, $city, $country) {
+  public static function createAddress($contactId, $locationTypeId, $streetAddress, $supplementalAddress, $postalCode, $city, $country) {
     $params = [
       'contact_id' => $contactId,
       'location_type_id' => $locationTypeId,
