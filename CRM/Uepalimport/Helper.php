@@ -407,16 +407,16 @@ class CRM_Uepalimport_Helper {
         }
         // add home phones
         if ($dao->home_phone) {
-          $privateNote .= 'Tél. ' . $dao->home_phone . '<br>';
+          $privateNote .= 'Tél. ' . $dao->home_phone . "\n";
         }
         if ($dao->home_mobile_phone) {
-          $privateNote .= 'Tél. ' . $dao->home_mobile_phone . '<br>';
+          $privateNote .= 'Tél. ' . $dao->home_mobile_phone . "\n";
         }
         if ($dao->home_fax) {
-          $privateNote .= 'Fax ' . $dao->home_fax . '<br>';
+          $privateNote .= 'Fax ' . $dao->home_fax . "\n";
         }
         if ($dao->home_email) {
-          $privateNote .= 'Email ' . $dao->home_email . '<br>';
+          $privateNote .= 'Email ' . $dao->home_email . "\n";
         }
         if ($privateNote) {
           civicrm_api3('Note', 'create', [
