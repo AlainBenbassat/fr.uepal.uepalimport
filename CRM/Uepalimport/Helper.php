@@ -280,19 +280,19 @@ class CRM_Uepalimport_Helper {
         // add custom fields
         $config = new CRM_Uepalconfig_Config();
         if ($dao->custom_field_annee_consecration) {
-          $params['custom_' . $config->getCustomField_pasteurDetailAnneeConsecration()['id']] = $dao->custom_field_annee_consecration;
+          $params['custom_' . $config->getCustomField_ministreDetailAnneeConsecration()['id']] = $dao->custom_field_annee_consecration;
         }
         if ($dao->custom_field_annee_entree_ministere) {
-          $params['custom_' . $config->getCustomField_pasteurDetailAnneeEntreeMinistere()['id']] = $dao->custom_field_annee_entree_ministere;
+          $params['custom_' . $config->getCustomField_ministreDetailAnneeEntreeMinistere()['id']] = $dao->custom_field_annee_entree_ministere;
         }
         if ($dao->custom_field_annee_entree_poste_actuel) {
-          $params['custom_' . $config->getCustomField_pasteurDetailAnneeEntreePosteActuel()['id']] = $dao->custom_field_annee_entree_poste_actuel;
+          $params['custom_' . $config->getCustomField_ministreDetailAnneeEntreePosteActuel()['id']] = $dao->custom_field_annee_entree_poste_actuel;
         }
         if ($dao->custom_field_datecafp) {
-          $params['custom_' . $config->getCustomField_pasteurDetailDateCAFP()['id']] = self::convertExcelDate($dao->custom_field_datecafp);
+          $params['custom_' . $config->getCustomField_ministreDetailDateCAFP()['id']] = self::convertExcelDate($dao->custom_field_datecafp);
         }
         if ($dao->custom_field_degree) {
-          $params['custom_' . $config->getCustomField_pasteurDetailDiplomes()['id']] = $dao->custom_field_degree;
+          $params['custom_' . $config->getCustomField_ministreDetailDiplomes()['id']] = $dao->custom_field_degree;
         }
 
         // create the contact
