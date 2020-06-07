@@ -21,7 +21,7 @@ class CRM_Uepalimport_Form_Import extends CRM_Core_Form {
     $importMenuOptions = [
       'tmp_paroisses' => 'Importer les paroisses',
       'tmp_individus' => 'Importer les individus et leurs relations',
-      'tmp_pasteurs_actifs' => 'Importer les pasteurs actifs',
+      'tmp_pasteurs' => 'Importer les pasteurs',
       'tmp_inspections' => 'Importer les inspections',
       'tmp_consistoires' => 'Importer les consistoires',
       'test' => 'Test',
@@ -49,8 +49,8 @@ class CRM_Uepalimport_Form_Import extends CRM_Core_Form {
       //CRM_Uepalimport_Helper::process_tmp_paroisses_task($t, 8);
       //CRM_Uepalimport_Helper::process_tmp_paroisses_task($t, 143);
       //CRM_Uepalimport_Helper::process_tmp_individus_task($t, 'C0545');
-      CRM_Uepalimport_Helper::process_tmp_pasteurs_actifs_task($t, 557);
-      CRM_Uepalimport_Helper::process_tmp_pasteurs_actifs_task($t, 377);
+      CRM_Uepalimport_Helper::process_tmp_pasteurs_task($t, 'P14');
+      //CRM_Uepalimport_Helper::process_tmp_pasteurs_actifs_task($t, 377);
       //CRM_Uepalimport_Helper::process_tmp_individus_task($t, 'C0881');
     }
     else {

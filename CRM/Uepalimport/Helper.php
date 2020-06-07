@@ -219,12 +219,12 @@ class CRM_Uepalimport_Helper {
     return TRUE;
   }
 
-  public static function process_tmp_pasteurs_actifs_task(CRM_Queue_TaskContext $ctx, $id) {
+  public static function process_tmp_pasteurs_task(CRM_Queue_TaskContext $ctx, $id) {
     $sql = "
       SELECT
         *
       FROM
-        tmp_pasteurs_actifs
+        tmp_pasteurs
       WHERE
         id = '$id'
     ";
@@ -267,10 +267,10 @@ class CRM_Uepalimport_Helper {
           $params['formal_title'] = $dao->formal_title;
         }
         else {
-          if ($dao->relationship_pasteur_de) {
+          if ($dao->relationship_pasteur_de || $dao->tag_pasteur == 1) {
             $params['formal_title'] = $dao->gender == 'Féminin' ? 'la Pasteure' : 'le Pasteur';
           }
-          elseif ($dao->relationship_vicaire) {
+          elseif ($dao->relationship_vicaire || $dao->tag_vicaure == 1) {
             $params['formal_title'] = $dao->gender == 'le Vicaire';
           }
           elseif ($dao->relationship_suffragant) {
@@ -294,6 +294,21 @@ class CRM_Uepalimport_Helper {
         }
         if ($dao->custom_field_degree) {
           $params['custom_' . $config->getCustomField_ministreDetailDiplomes()['id']] = $dao->custom_field_degree;
+        }
+        if ($dao->custom_field_remusdc == "true") {
+          $params['custom_' . $config->getCustomField_ministreDetailRemunerePar()['id']] = 'Bureau des cultes';
+        }
+        elseif ($dao->custom_field_remusdc == "false") {
+          $params['custom_' . $config->getCustomField_ministreDetailRemunerePar()['id']] = 'ESP';
+        }
+        if ($dao->status) {
+          $params['custom_' . $config->getCustomField_ministreDetailStatut()['id']] = $dao->status;
+        }
+
+        // deceased?
+        if ($dao->deceased_date) {
+          $params['is_deceased'] = 1;
+          $params['deceased_date'] = $dao->deceased_date;
         }
 
         // create the contact
@@ -331,9 +346,6 @@ class CRM_Uepalimport_Helper {
         }
         if ($dao->work_mobile_phone) {
           self::createPhone($contact['id'], $dao->work_mobile_phone, 2, 2);
-        }
-        if ($dao->work_fax) {
-          self::createPhone($contact['id'], $dao->work_fax, 2, 3);
         }
 
         // add work email
@@ -384,14 +396,56 @@ class CRM_Uepalimport_Helper {
         }
 
         // add the tag
-        if ($dao->relationship_pasteur_de) {
+        if ($dao->relationship_pasteur_de || $dao->tag_pasteur == 1) {
           self::createContactTag($contact['id'], 'Pasteur·e');
         }
-        elseif ($dao->relationship_vicaire) {
+        elseif ($dao->relationship_vicaire || $dao->tag_vicaire == 1) {
           self::createContactTag($contact['id'], 'Vicaire');
         }
         elseif ($dao->relationship_suffragant) {
           self::createContactTag($contact['id'], 'Suffragant·e');
+        }
+        elseif (strpos($dao->formal_title, 'asteur') !== FALSE || strpos($dao->formal_title, 'nspect') !== FALSE) {
+          // title contains pasteur/pasteure or inspecteur/inspectrice (with or without capital letter)
+          self::createContactTag($contact['id'], 'Pasteur·e');
+        }
+
+        // add note
+        $note = '';
+        if ($dao->note_poste_actuel) {
+          $note .= 'Poste actuel : ' . $dao->note_poste_actuel . "\n";
+        }
+        if ($dao->note_fonction_sup) {
+          $note .= 'Fonctions supplémentaires : ' . $dao->note_fonction_sup . "\n";
+        }
+        if ($dao->note_func1) {
+          $note .= 'Fonctions supplémentaires : ' . $dao->note_func1 . "\n";
+        }
+        if ($dao->note_func2) {
+          $note .= 'Fonctions supplémentaires : ' . $dao->note_func2 . "\n";
+        }
+        if ($dao->note_func3) {
+          $note .= 'Fonctions supplémentaires : ' . $dao->note_func3 . "\n";
+        }
+        if ($note) {
+          civicrm_api3('Note', 'create', [
+            'entity_table' => 'civicrm_contact',
+            'entity_id' => $contact['id'],
+            'note' => str_replace('%n', "\n", $note),
+            'subject' => 'import',
+            'privacy' => 0,
+          ]);
+        }
+
+        // note for congé
+        if ($dao->note_conge) {
+          civicrm_api3('Note', 'create', [
+            'entity_table' => 'civicrm_contact',
+            'entity_id' => $contact['id'],
+            'note' => self::convertExcelDate($dao->note_conge),
+            'subject' => 'import Congé',
+            'privacy' => 0,
+          ]);
         }
 
         // add private note
@@ -405,12 +459,20 @@ class CRM_Uepalimport_Helper {
         if ($dao->home_postal_code || $dao->home_city) {
           $privateNote .= $dao->home_postal_code . " " . $dao->home_city . "\n";
         }
-        // add home phones
         if ($dao->home_phone) {
           $privateNote .= 'Tél. ' . $dao->home_phone . "\n";
         }
         if ($dao->home_mobile_phone) {
           $privateNote .= 'Tél. ' . $dao->home_mobile_phone . "\n";
+        }
+        if ($dao->private_note_port) {
+          $privateNote .= 'Portable ' . $dao->private_note_port . "\n";
+        }
+        if ($dao->private_note_tel1) {
+          $privateNote .= 'Tél1. ' . $dao->private_note_tel1 . "\n";
+        }
+        if ($dao->private_note_tel2) {
+          $privateNote .= 'Tél2. ' . $dao->private_note_tel2 . "\n";
         }
         if ($dao->home_fax) {
           $privateNote .= 'Fax ' . $dao->home_fax . "\n";
@@ -418,12 +480,15 @@ class CRM_Uepalimport_Helper {
         if ($dao->home_email) {
           $privateNote .= 'Email ' . $dao->home_email . "\n";
         }
+        if ($dao->note) {
+          $privateNote .= 'Note : ' . $dao->note . "\n";
+        }
         if ($privateNote) {
           civicrm_api3('Note', 'create', [
             'entity_table' => 'civicrm_contact',
             'entity_id' => $contact['id'],
-            'note' => $privateNote,
-            'subject' => 'import',
+            'note' => str_replace('%n', "\n", $privateNote),
+            'subject' => 'import (note confidentielle)',
             'privacy' => 2,
           ]);
         }
